@@ -1,3 +1,3 @@
 vktoken = ""
 
-group_token = ""
+group_token = "vk1.a.yaPRhLhIIoA_gys6rubRMuPVxCVhfoiCx-Rpm89uyJs8-FTWLMmePnw1XojCXtyde9S3Sytd0JGLBUCWpJ8zOL4Ylji1gM-BhfigoGtdd2ZUcuiV_YIcicNZBtfVnGvRmQVaZDZG9cAGzVitfRYYbj3J8gyQq21IZSLqnqvjwQ3Q1-QWG3eqBU3KBh_2xIeLeMWI1ByTsJmW8rCYv1fJ1A"
