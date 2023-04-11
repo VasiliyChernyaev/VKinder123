@@ -114,7 +114,7 @@ def get_photo_json(id): ##Запрос фотографий
     return photos
 
 
-with psycopg2.connect(database="vkinder", user="postgres", password="waterpillar") as conn:
+with psycopg2.connect(database="vkinder", user="postgres", password="postgres") as conn:
     # delete_tables(conn)
     create_db(conn)
     get_users(conn)
