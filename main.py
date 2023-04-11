@@ -1,4 +1,4 @@
-import requests, json, os, psycopg2, datetime, vk_api
+import psycopg2, vk_api
 from tokens import vktoken, group_token
 from vk_api.longpoll import VkLongPoll, VkEventType
 
@@ -125,7 +125,7 @@ for event in longpool.listen():
         if event.to_me:
             msg = event.text.lower()
             id = event.user_id
-            if msg == "hi":
+            if msg != None:
                 send_some_message(id, f'Здравствуйте пользователь {id}, Вас приветствует ассистент Vkinder. '
                                       f'Чтобы начать поиск, введите "поиск".')
             if msg == 'поиск':
@@ -146,7 +146,7 @@ for event in longpool.listen():
                 except:
                     print('попробуйте еще раз')
             if msg == "группы":
-                send_some_message(id, 'Введите id группы (9 цифр).')
+                send_some_message(id, 'Введите id группы (9 цифр). Узнать id можно на https://regvk.com/id/')
             if len(str(msg)) == 9:
                 try:
                     if type(int(msg)) == int:
