@@ -125,10 +125,11 @@ for event in longpool.listen():
         if event.to_me:
             msg = event.text.lower()
             id = event.user_id
-            if msg != None:
+            greetings = ["hi", "привет", "здравствуйте", "123", "хай", "hello", "как дела?"]
+            if msg in greetings:
                 send_some_message(id, f'Здравствуйте пользователь {id}, Вас приветствует ассистент Vkinder. '
                                       f'Чтобы начать поиск, введите "поиск".')
-            if msg == 'поиск':
+            elif msg == 'поиск':
                 city_id = get_user_info(id)[0]["city"]["id"]
                 send_some_message(id, f'Мы ищем пару из {get_user_info(id=id)[0]["city"]["title"]}, '
                                       f'введите желаемый возраст через диапазон, например "18, 55"')
@@ -136,7 +137,7 @@ for event in longpool.listen():
                     gender = 2
                 elif get_user_info(id=id)[0]["sex"] == 2:
                     gender = 1
-            if len(msg.split(',')) == 2:
+            elif len(msg.split(',')) == 2:
                 try:
                     from_age = int(msg.split(',')[0])
                     to_age = int(msg.split(',')[-1])
@@ -145,9 +146,9 @@ for event in longpool.listen():
                                           'Если хотите, введите "группы". Иначе введите "начать поиск"')
                 except:
                     print('попробуйте еще раз')
-            if msg == "группы":
+            elif msg == "группы":
                 send_some_message(id, 'Введите id группы (9 цифр). Узнать id можно на https://regvk.com/id/')
-            if len(str(msg)) == 9:
+            elif len(str(msg)) == 9:
                 try:
                     if type(int(msg)) == int:
                         group_id = int(msg)
@@ -155,7 +156,7 @@ for event in longpool.listen():
                 except:
                     pass
 
-            if msg == "начать поиск":
+            elif msg == "начать поиск":
                 for user in get_users(conn):
                     send_some_message(id, f'{"https://vk.com/id" + str(user[0])} {user[1]}, {user[2]}, {user[3]}')
                     data = get_photo_json(id=user[0])
