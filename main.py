@@ -4,10 +4,6 @@ from vk_api import VkApi
 from psycopg2 import connect
 from database import delete_tables, create_table, add_user, check_database
 
-# ##Группы для поиска
-# 10360575    87750784 201852825 199864025   202669543 207228548
-# соционика1 соционика2   mbti    mbtimems1  mbtimems2   intp
-
 vk_session = VkApi(token=group_token)
 user_session = VkApi(token=vktoken)
 session_api = vk_session.get_api()
@@ -166,7 +162,7 @@ for event in longpool.listen():
                     send_some_message(id, "Введите число без каких-либо других символов")
             ## Начинаем поиск, подключаемся к БД
             elif msg == "начать поиск":
-                with connect(database="vkinder", user="postgres", password="waterpillar") as conn:
+                with connect(database="vkinder", user="postgres", password="postgres") as conn:
                     # delete_tables(conn) ## Удалить таблицу, если необходимо
                     create_table(conn) ## Создаем таблицу user + пара, когда пользователь запустил поиск
                     try:
