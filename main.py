@@ -4,6 +4,7 @@ from vk_api import VkApi
 from psycopg2 import connect
 from database import delete_tables, create_table, add_user, check_database
 
+
 vk_session = VkApi(token=group_token)
 user_session = VkApi(token=vktoken)
 session_api = vk_session.get_api()
@@ -30,34 +31,37 @@ def get_user_json(age, gender, city_id, group_id=None, offset=0):
                                        'status': 6,
                                        'age_from': age,
                                        'age_to': age,
-                                       'fields': 'has_photo',
+                                       'fields': 'has_photo, interests, games, music, books, tv, movies, about, quotes',
                                        'offset': offset,
                                        'v': '5.131'
                                         }
                                        )
     else:
         database = user_session.method('users.search',
-                                       {'city_id': city_id,
+                                        {'city_id': city_id,
                                         'count': 1000,
                                         'sex': gender,
                                         'status': 6,
                                         'age_from': age,
                                         'age_to': age,
-                                        'fields': 'has_photo',
+                                        'fields': 'has_photo, interests, games, music, books, tv, movies, about, quotes',
                                         'group_id': group_id,
                                         'offset': offset,
                                         'v': '5.131'
                                         }
                                        )
+
     return database
 
 ## Список подходящих партнеров
 def get_users(user_id):
     user_list = []
-    for age in range(from_age, to_age + 1): ## Идем по возрасту, начиная с молодых
+    ## Идем по возрасту, начиная с молодых
+    for age in range(from_age, to_age + 1):
         data = get_user_json(age, gender, city_id, group_id, offset=0)
         count = data['count']
-        for i in range(0, count + 1, 1000): ## Работа с оффсетом, если count > 1000
+        ## Работа с оффсетом, если count > 1000
+        for i in range(0, count + 1, 1000):
             data = get_user_json(age, gender, city_id, group_id, offset=i)
             for user in data['items']:
                 if user['is_closed'] is False: ## проверка на закрытый профиль
@@ -65,8 +69,17 @@ def get_users(user_id):
                         pair_id = user['id']
                         first_name = user['first_name']
                         last_name = user['last_name']
+                        person = [pair_id, last_name, first_name, age]
                         if check_database(conn, user_id=user_id, pair_id=pair_id) is None:
-                            user_list.append([pair_id, last_name, first_name, age])
+                            if extended_only == 0: ## Поиск без доп.параметров
+                                user_list.append(person)
+                            else:
+                                for field in advanced_fields:
+                                    if field in user: ## Есть ли доп.параметр в данных пользователя
+                                        if len(user[field]) > 0: ## отсев пустых
+                                            person.append({field: user[field]})
+                                if len(person) > 4: ## если fields пустые, будет ровно 4 элемента в листе
+                                    user_list.append(person)
         if len(user_list) > profile_count:  ## Останавливаем цикл for age, если слишком много пользователей
             break
     return user_list
@@ -98,11 +111,24 @@ def get_photos(id):
             top3photos = sorted(fotos, key=fotos.get, reverse=True)[:3]
     return top3photos
 
+## Перевод ключа на русский язык
+def replace_dict_keys(user: list):
+    words = {'interests': "Интересы", 'music': "Музыка", 'books': "Книги", 'games': "Игры",
+             'about': "О себе", 'movies': "Фильмы", 'tv': "Сериалы", 'quotes': "Цитаты"}
+    for dic in user[4:]:
+        for key, value in words.items():
+            if key in dic.keys():
+                dic[value] = dic.pop(key)
+    return user
+
 ## Переменные для дополнительных параметров поиска (по умолчанию)
+
 first_message = 0
 anketi = 0
 groups = 0
+extended_only = 0
 profile_count = 100 ## Сколько анкет по умолчанию
+
 ## Держурство бота
 for event in longpool.listen():
     if event.type == VkEventType.MESSAGE_NEW:
@@ -111,7 +137,8 @@ for event in longpool.listen():
             id = event.user_id
             ## Первое сообщение боту
             if first_message == 0:
-                send_some_message(id, f'Здравствуйте пользователь {id}, Вас приветствует ассистент Vkinder. '
+                user_name = get_user_info(id=id)[0]["first_name"]
+                send_some_message(id, f'Здравствуйте {user_name}, Вас приветствует ассистент Vkinder. '
                                       f'Чтобы начать поиск, введите "поиск".')
                 first_message = 1
             ## Берем данные пользователя
@@ -119,7 +146,7 @@ for event in longpool.listen():
                 city_id = get_user_info(id=id)[0]["city"]["id"]
                 group_id = None
                 send_some_message(id, f'Мы ищем пару из {get_user_info(id=id)[0]["city"]["title"]}, '
-                                      f'введите желаемый возраст через диапазон, например "18, 55"')
+                                      f'введите желаемый возраст через запятую, например "18, 55"')
                 if get_user_info(id=id)[0]["sex"] == 1:
                     gender = 2
                 elif get_user_info(id=id)[0]["sex"] == 2:
@@ -129,18 +156,18 @@ for event in longpool.listen():
                 try:
                     from_age = int(msg.split(',')[0])
                     to_age = int(msg.split(',')[-1])
-                    send_some_message(id, 'Нужны дополнительные параметры (группы, кол-во анкет)? '
-                                          'Если хотите, введите "группы" или "анкеты". Иначе введите "начать поиск"')
+                    send_some_message(id, 'Нужны дополнительные параметры (группы, поиск по интересам, кол-во анкет)? '
+                                          'Если хотите, введите "группы", "интересы" или "анкеты". Иначе введите "начать поиск"')
                 except:
                     send_some_message(id, 'Ошибка диапазона, если вам нужен определенный возраст'
                                                  'используйте его через запятую, например "25,25"')
-            ## Дополнительная сортировка по одной группе
+            ## Сортировка по одной группе
             elif msg == "группы":
                 send_some_message(id, 'Введите id группы (9 цифр). Узнать id можно на https://regvk.com/id/')
                 groups = 1
             elif groups == 1:
                 try:
-                    if len(str(msg)) == 9 and type(int(msg)) == int:
+                    if type(int(msg)) == int:
                         group_id = int(msg)
                         send_some_message(id, 'Сортировка по группе добавлена! Ведите "начать поиск"')
                         groups = 0
@@ -154,20 +181,31 @@ for event in longpool.listen():
                 try:
                     if int(msg) in range(1, 1001):
                         profile_count = int(msg)
-                        send_some_message(id, f'Количество отображаемых анкет — {profile_count}. Можно начинать поиск.')
+                        send_some_message(id, f'Количество отображаемых анкет — {profile_count}. Можно "начать поиск".')
                         anketi = 0
                     else:
                         send_some_message(id, 'Используйте диапазон от 1 до 1000.')
                 except:
-                    send_some_message(id, "Введите число без каких-либо других символов")
+                    send_some_message(id, "Введите число без каких-либо других символов.")
+            ## Фильтр только пользователей с интересами. Я не стал их совмещать, потому что у 90% пользователей нет интересов.
+            ## Можно сделать разные интересы через name in advanced_fields, но пользователь будет добавлен в БД, поэтому проще все вывести сразу.
+            elif msg == "интересы":
+                extended_only = 1
+                advanced_fields = {'interests', 'games', 'music' 'books', 'tv', 'movies', 'about', 'quotes'}
+                send_some_message(id, 'Поиск пользователей ТОЛЬКО с наличием интересов включен. Это занимает больше времени.')
             ## Начинаем поиск, подключаемся к БД
             elif msg == "начать поиск":
                 with connect(database="vkinder", user="postgres", password="postgres") as conn:
-                    # delete_tables(conn) ## Удалить таблицу, если необходимо
+                    ##delete_tables(conn) ## Удалить таблицу, если необходимо
                     create_table(conn) ## Создаем таблицу user + пара, когда пользователь запустил поиск
                     try:
                         for user in get_users(user_id=id)[:profile_count]: ## кол-во профилей за сессию
-                            send_some_message(id, f'{"https://vk.com/id" + str(user[0])} {user[1]}, {user[2]}, {user[3]}')
+                            send_some_message(id, f'{"https://vk.com/id" + str(user[0])} {user[1]} {user[2]}, {user[3]}')
+                            if extended_only == 1:
+                                replace_dict_keys(user) ## Переводим advanced_fields на русский
+                                for field in user[4:]: ## Все дополнительные поля после user[3] (возраст)
+                                    for key, value in field.items():
+                                        send_some_message(id, f'{key}: {value} \n')
                             send_some_message(id, '\n'.join(str(link) for link in get_photos(id=user[0])))
                             add_user(conn, user_id=id, pair_id=user[0]) ##Добавили пару в БД
                     except:
