@@ -6,7 +6,6 @@ def delete_tables(conn):
         conn.commit()
     return 'Таблицы успешно удалены'
 
-
 ## Функция, создающая структуру БД. Т.е. в данной функции создаются таблицы в базе данных
 def create_table(conn):
     with conn.cursor() as cur:
