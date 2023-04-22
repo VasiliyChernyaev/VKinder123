@@ -34,4 +34,4 @@ def check_database(conn, user_id, pair_id):
         check = cur.fetchone()
     return check
 
-conn = connect(database="vkinder", user="postgres", password="waterpillar")
+conn = connect(database="vkinder", user="postgres", password="postgres")
