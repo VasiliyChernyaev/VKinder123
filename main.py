@@ -115,7 +115,8 @@ def get_photos(id):
             top3photos = sorted(fotos, key=fotos.get, reverse=True)[:3]
     return top3photos
 
-## Функция для перевода vk.fields на русский язык + заглавная буква с новой строки в сообщениях бота
+
+## Перевод vk.fields на русский язык + заглавная буква
 def replace_dict_keys(user: list):
     words = {'interests': "Интересы", 'music': "Музыка", 'books': "Книги", 'games': "Игры",
              'about': "О себе", 'movies': "Фильмы", 'tv': "Сериалы", 'quotes': "Цитаты"}
@@ -125,19 +126,23 @@ def replace_dict_keys(user: list):
                 dict[value] = dict.pop(key)
     return user
 
+
 ## Переменные для дополнительных параметров поиска (по умолчанию)
-options = {'first_message': False, 'age': False, 'forms': False, 'groups': False, 'advanced': False, 'only_advanced': False,
-           'interests': False, 'games': False, 'music': False, 'books': False, 'tv': False, 'movies': False, 'about': False, 'quotes': False}
-profile_count = 5  ## Сколько анкет по умолчанию
-attachments = [] ## Для прикрепления фотографий
+from_age = 18
+to_age = 35
+group_id = None
+profile_count = 5
+options = {'first_message': False, 'age': False, 'forms': False, 'groups': False, 'advanced': False,
+           'only_advanced': False, 'interests': False, 'games': False, 'music': False, 'books': False,
+           'tv': False, 'movies': False, 'about': False, 'quotes': False}
 
 ## Держурство бота
 for event in longpool.listen():
-    if event.type == VkEventType.MESSAGE_NEW:
-        if event.to_me:
-            msg = event.text.lower()
-            id = event.user_id
-            ## Первое сообщение боту, берем данные пользователя
+    if event.type == VkEventType.MESSAGE_NEW and event.to_me:
+        msg = event.text.lower()
+        id = event.user_id
+        ## Первое сообщение боту, берем данные пользователя
+        if event.from_user:
             if options['first_message'] is False:
                 user_name = get_user_info(id=id)[0]["first_name"]
                 city_id = get_user_info(id=id)[0]["city"]["id"]
@@ -145,9 +150,6 @@ for event in longpool.listen():
                     gender = 2
                 elif get_user_info(id=id)[0]["sex"] == 2:
                     gender = 1
-                from_age = 18
-                to_age = 35
-                group_id = None
                 send_some_message(id, f'Здравствуйте {user_name}, Вас приветствует ассистент Vkinder.\n'
                                     f'Мы ищем пару из {get_user_info(id=id)[0]["city"]["title"]}. Возраст: 18-35 лет.\n \n'
                                     'Нужно настроить параметры (возрастной диапазон, группы, дополнительные поля, кол-во анкет)? '
@@ -185,7 +187,7 @@ for event in longpool.listen():
                     send_some_message(id, "ID группы состоит только из цифр")
             ## Даем пользователю ввести сколько ему нужно анкет
             elif msg == "анкеты":
-                send_some_message(id, 'Введите нужное количество анкет, максимум 50 (по умолчанию 5).')
+                send_some_message(id, 'Введите нужное количество анкет, максимум 50 (по умолчанию 5)')
                 options['forms'] = True
             elif options['forms'] is True:
                 try:
@@ -202,11 +204,11 @@ for event in longpool.listen():
                 options['advanced'] = True
                 ## Дополнительные параметры
                 advanced_fields = {'interests': 'интересы', 'music': 'музыка', 'books': 'книги', 'games': 'игры',
-                              'tv': 'сериалы', 'movies': 'фильмы', 'about': 'о себе', 'quotes': 'цитаты'}
+                                    'tv': 'сериалы', 'movies': 'фильмы', 'about': 'о себе', 'quotes': 'цитаты'}
                 send_some_message(id, 'Для отображения доп.поля, введите его название. \n'
-                                      'Доступные поля: интересы, игры, музыка, книги, сериалы, фильмы, о себе, цитаты.'
-                                      'Чтобы активировать все поля, введите "все". \n'
-                                      'Чтобы поиск производился ТОЛЬКО если у пары есть доп.поле, введите "только". ')
+                                    'Доступные поля: интересы, игры, музыка, книги, сериалы, фильмы, о себе, цитаты.'
+                                    'Чтобы активировать все поля, введите "все". \n'
+                                    'Чтобы поиск производился ТОЛЬКО если у пары есть доп.поле, введите "только". ')
             ## Включаем fields в json запрос
             elif options['advanced'] is True and msg in advanced_fields.values():
                 for key, value in advanced_fields.items():
@@ -223,16 +225,17 @@ for event in longpool.listen():
                 send_some_message(id, 'Поиск ТОЛЬКО с наличием хотя бы одного дополнительного поля включен')
             ## Начинаем поиск, подключаемся к БД
             elif msg == "поиск":
-                print(id, f'Возраст: {from_age}-{to_age}, анкет: {profile_count}, доп.поля - {options["advanced"]}') ## параметры, которые ищет пользователь
+                print(id, f'Возраст: {from_age}-{to_age}, анкет: {profile_count}, доп.поля - {options["advanced"]}')
                 # delete_tables(conn) ## Удалить таблицу, если необходимо
                 create_table(conn)  ## Создаем таблицу user + пара, когда пользователь запустил поиск
+                attachments = [] ## Для фотографий
                 try:
                     for user in get_users(user_id=id)[:profile_count]:  ## кол-во профилей за сессию
                         send_some_message(id, f'{"https://vk.com/id" + str(user[0])} {user[1]} {user[2]}, {user[3]}')
                         if options['advanced'] is True:
                             replace_dict_keys(user)
                             for field in user[4:]:
-                                 for key, value in field.items():
+                                for key, value in field.items():
                                     send_some_message(id, f'{key}: {value} \n')
                         for photo_id in get_photos(id=user[0]):
                             attachments.append('photo{}_{}'.format(user[0], photo_id))
@@ -242,12 +245,13 @@ for event in longpool.listen():
                 except:
                     send_some_message(id, "Ошибка запроса, попробуте позже")
                 send_some_message(id, 'Сессия поиска завершена. \n '
-                                        'Введите "поиск" повторно (настройки останутся без изменений), '
-                                        'либо вы можете изменить количественные параметры (возраст, группы, анкеты). \n'
-                                        'Используйте "выход" для завершения работы с ботом (все настройки сбросятся).')
+                                    'Введите "поиск" повторно (настройки останутся без изменений), '
+                                    'либо вы можете изменить количественные параметры (возраст, группы, анкеты). \n'
+                                    'Используйте "выход" для завершения работы с ботом (все настройки сбросятся).')
             ## Выход, сбрасываем настройки
             elif msg == "выход":
                 print(id, 'вышел из поиска')
                 for key, value in options.items():
                     options[key] = False
                 send_some_message(id, 'До свидания!')
+                
