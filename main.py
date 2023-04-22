@@ -10,7 +10,6 @@ session_api = vk_session.get_api()
 longpool = VkLongPoll(vk_session)
 upload = VkUpload(vk_session)
 
-attachments = []
 def send_some_message(id, some_text):
     vk_session.method('messages.send', {'user_id': id, "message": some_text, "random_id": get_random_id()})
 
@@ -116,7 +115,7 @@ def get_photos(id):
             top3photos = sorted(fotos, key=fotos.get, reverse=True)[:3]
     return top3photos
 
-
+## Функция для перевода vk.fields на русский язык + заглавная буква с новой строки в сообщениях бота
 def replace_dict_keys(user: list):
     words = {'interests': "Интересы", 'music': "Музыка", 'books': "Книги", 'games': "Игры",
              'about': "О себе", 'movies': "Фильмы", 'tv': "Сериалы", 'quotes': "Цитаты"}
@@ -126,11 +125,12 @@ def replace_dict_keys(user: list):
                 dict[value] = dict.pop(key)
     return user
 
-
 ## Переменные для дополнительных параметров поиска (по умолчанию)
 options = {'first_message': False, 'age': False, 'forms': False, 'groups': False, 'advanced': False, 'only_advanced': False,
            'interests': False, 'games': False, 'music': False, 'books': False, 'tv': False, 'movies': False, 'about': False, 'quotes': False}
 profile_count = 5  ## Сколько анкет по умолчанию
+attachments = [] ## Для прикрепления фотографий
+
 ## Держурство бота
 for event in longpool.listen():
     if event.type == VkEventType.MESSAGE_NEW:
@@ -185,7 +185,7 @@ for event in longpool.listen():
                     send_some_message(id, "ID группы состоит только из цифр")
             ## Даем пользователю ввести сколько ему нужно анкет
             elif msg == "анкеты":
-                send_some_message(id, 'Введите нужное количество анкет, максимум 50 (по умолчанию 5)')
+                send_some_message(id, 'Введите нужное количество анкет, максимум 50 (по умолчанию 5).')
                 options['forms'] = True
             elif options['forms'] is True:
                 try:
@@ -223,7 +223,7 @@ for event in longpool.listen():
                 send_some_message(id, 'Поиск ТОЛЬКО с наличием хотя бы одного дополнительного поля включен')
             ## Начинаем поиск, подключаемся к БД
             elif msg == "поиск":
-                print(id, f'Возраст: {from_age}-{to_age}, анкет: {profile_count}, доп.поля - {options["advanced"]}')
+                print(id, f'Возраст: {from_age}-{to_age}, анкет: {profile_count}, доп.поля - {options["advanced"]}') ## параметры, которые ищет пользователь
                 # delete_tables(conn) ## Удалить таблицу, если необходимо
                 create_table(conn)  ## Создаем таблицу user + пара, когда пользователь запустил поиск
                 try:
