@@ -1,3 +1,4 @@
+from psycopg2 import connect
 ## Удаление таблицы
 def delete_tables(conn):
     with conn.cursor() as cur:
@@ -32,3 +33,5 @@ def check_database(conn, user_id, pair_id):
                     WHERE u.user_id =%s and u.pair_id =%s;""", (user_id, pair_id))
         check = cur.fetchone()
     return check
+
+conn = connect(database="vkinder", user="postgres", password="waterpillar")
