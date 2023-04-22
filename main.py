@@ -254,4 +254,5 @@ for event in longpool.listen():
                 for key, value in options.items():
                     options[key] = False
                 send_some_message(id, 'До свидания!')
-                
+            else:
+                send_some_message(id, "Неизвестная команда")
