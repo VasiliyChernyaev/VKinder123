@@ -142,117 +142,116 @@ for event in longpool.listen():
         msg = event.text.lower()
         id = event.user_id
         ## Первое сообщение боту, берем данные пользователя
-        if event.from_user:
-            if options['first_message'] is False:
-                user_name = get_user_info(id=id)[0]["first_name"]
-                city_id = get_user_info(id=id)[0]["city"]["id"]
-                if get_user_info(id=id)[0]["sex"] == 1:
-                    gender = 2
-                elif get_user_info(id=id)[0]["sex"] == 2:
-                    gender = 1
-                send_some_message(id, f'Здравствуйте {user_name}, Вас приветствует ассистент Vkinder.\n'
+        if options['first_message'] is False:
+            user_name = get_user_info(id=id)[0]["first_name"]
+            city_id = get_user_info(id=id)[0]["city"]["id"]
+            if get_user_info(id=id)[0]["sex"] == 1:
+                gender = 2
+            elif get_user_info(id=id)[0]["sex"] == 2:
+                gender = 1
+            send_some_message(id, f'Здравствуйте {user_name}, Вас приветствует ассистент Vkinder.\n'
                                     f'Мы ищем пару из {get_user_info(id=id)[0]["city"]["title"]}. Возраст: 18-35 лет.\n \n'
                                     'Нужно настроить параметры (возрастной диапазон, группы, дополнительные поля, кол-во анкет)? '
                                     'Тогда введите "возраст", "группы", "дополнительно" или "анкеты". \n \n'
                                     'Чтобы начать поиск, введите "поиск"')
-                options['first_message'] = True
-            ## Возрастной диапазон, через запятую from_age, to_age
-            elif msg == 'возраст':
-                send_some_message(id, 'Введите желаемый возрастной диапазон через дефис, например "18-55". '
+            options['first_message'] = True
+        ## Возрастной диапазон, через запятую from_age, to_age
+        elif msg == 'возраст':
+            send_some_message(id, 'Введите желаемый возрастной диапазон через дефис, например "18-55". '
                                       'Поиск ведется от младшего к старшему.')
-                options['age'] = True
-            elif options['age'] is True:
-                if len(msg.split('-')) == 2:
-                    try:
-                        from_age = int(msg.split('-')[0])
-                        to_age = int(msg.split('-')[-1])
-                        send_some_message(id, f'Возрастной диапазон в годах установлен с {from_age} по {to_age}')
-                        options['age'] = False
-                    except:
-                        send_some_message(id, 'Ошибка диапазона, используйте только цифры. Если вам нужен один возраст,'
+            options['age'] = True
+        elif options['age'] is True:
+            if len(msg.split('-')) == 2:
+                try:
+                    from_age = int(msg.split('-')[0])
+                    to_age = int(msg.split('-')[-1])
+                    send_some_message(id, f'Возрастной диапазон в годах установлен с {from_age} по {to_age}')
+                    options['age'] = False
+                except:
+                    send_some_message(id, 'Ошибка диапазона, используйте только цифры. Если вам нужен один возраст,'
                                               'также введите его через дефис, например "25-25"')
+            else:
+                send_some_message(id, 'Используйте дефис "-", например "20-30"')
+        ## Дополнительная сортировка по одной группе
+        elif msg == "группы":
+            send_some_message(id, 'Введите id группы (9 цифр). Узнать id можно на https://regvk.com/id/')
+            options['groups'] = True
+        elif options['groups'] is True:
+            try:
+                if type(int(msg)) == int:
+                    group_id = int(msg)
+                    send_some_message(id, 'Сортировка по группе добавлена! Можно начинать "поиск"')
+                    options['groups'] = False
+            except:
+                send_some_message(id, "ID группы состоит только из цифр")
+        ## Даем пользователю ввести сколько ему нужно анкет
+        elif msg == "анкеты":
+            send_some_message(id, 'Введите нужное количество анкет, максимум 50 (по умолчанию 5)')
+            options['forms'] = True
+        elif options['forms'] is True:
+            try:
+                if int(msg) in range(1, 51):
+                    profile_count = int(msg)
+                    send_some_message(id, f'Количество отображаемых анкет — {profile_count}. Можно начинать "поиск"')
+                    options['forms'] = False
                 else:
-                    send_some_message(id, 'Используйте дефис "-", например "20-30"')
-            ## Дополнительная сортировка по одной группе
-            elif msg == "группы":
-                send_some_message(id, 'Введите id группы (9 цифр). Узнать id можно на https://regvk.com/id/')
-                options['groups'] = True
-            elif options['groups'] is True:
-                try:
-                    if type(int(msg)) == int:
-                        group_id = int(msg)
-                        send_some_message(id, 'Сортировка по группе добавлена! Можно начинать "поиск"')
-                        options['groups'] = False
-                except:
-                    send_some_message(id, "ID группы состоит только из цифр")
-            ## Даем пользователю ввести сколько ему нужно анкет
-            elif msg == "анкеты":
-                send_some_message(id, 'Введите нужное количество анкет, максимум 50 (по умолчанию 5)')
-                options['forms'] = True
-            elif options['forms'] is True:
-                try:
-                    if int(msg) in range(1, 51):
-                        profile_count = int(msg)
-                        send_some_message(id, f'Количество отображаемых анкет — {profile_count}. Можно начинать "поиск"')
-                        options['forms'] = False
-                    else:
-                        send_some_message(id, 'Используйте диапазон от 1 до 50')
-                except:
-                    send_some_message(id, "Введите число без каких-либо других символов.")
-            ## Дополнительные поля (интересы)
-            elif msg == "дополнительно":
-                options['advanced'] = True
-                ## Дополнительные параметры
-                advanced_fields = {'interests': 'интересы', 'music': 'музыка', 'books': 'книги', 'games': 'игры',
+                    send_some_message(id, 'Используйте диапазон от 1 до 50')
+            except:
+                send_some_message(id, "Введите число без каких-либо других символов.")
+        ## Дополнительные поля (интересы)
+        elif msg == "дополнительно":
+            options['advanced'] = True
+            ## Дополнительные параметры
+            advanced_fields = {'interests': 'интересы', 'music': 'музыка', 'books': 'книги', 'games': 'игры',
                                     'tv': 'сериалы', 'movies': 'фильмы', 'about': 'о себе', 'quotes': 'цитаты'}
-                send_some_message(id, 'Для отображения доп.поля, введите его название. \n'
+            send_some_message(id, 'Для отображения доп.поля, введите его название. \n'
                                     'Доступные поля: интересы, игры, музыка, книги, сериалы, фильмы, о себе, цитаты.'
                                     'Чтобы активировать все поля, введите "все". \n'
                                     'Чтобы поиск производился ТОЛЬКО если у пары есть доп.поле, введите "только". ')
-            ## Включаем fields в json запрос
-            elif options['advanced'] is True and msg in advanced_fields.values():
-                for key, value in advanced_fields.items():
-                    if advanced_fields[key] == msg:
-                        options[key] = True
-                        send_some_message(id, f'Поле {msg} активировано')
-            elif msg == 'все' and options['advanced'] is True:
-                for field in advanced_fields.keys():
-                    options[field] = True
-                send_some_message(id, 'Все поля активированы')
-            ## Ищем только тех, у кого есть минимум одно дополнительное поле
-            elif msg == 'только' and options['advanced'] is True:
-                options['only_advanced'] = True
-                send_some_message(id, 'Поиск ТОЛЬКО с наличием хотя бы одного дополнительного поля включен')
-            ## Начинаем поиск, подключаемся к БД
-            elif msg == "поиск":
-                print(id, f'Возраст: {from_age}-{to_age}, анкет: {profile_count}, доп.поля - {options["advanced"]}')
-                # delete_tables(conn) ## Удалить таблицу, если необходимо
-                create_table(conn)  ## Создаем таблицу user + пара, когда пользователь запустил поиск
-                attachments = [] ## Для фотографий
-                try:
-                    for user in get_users(user_id=id)[:profile_count]:  ## кол-во профилей за сессию
-                        send_some_message(id, f'{"https://vk.com/id" + str(user[0])} {user[1]} {user[2]}, {user[3]}')
-                        if options['advanced'] is True:
-                            replace_dict_keys(user)
-                            for field in user[4:]:
-                                for key, value in field.items():
-                                    send_some_message(id, f'{key}: {value} \n')
-                        for photo_id in get_photos(id=user[0]):
-                            attachments.append('photo{}_{}'.format(user[0], photo_id))
-                        send_photo(id)
-                        attachments.clear()
-                        add_user(conn, user_id=id, pair_id=user[0])  ##Добавили пару в БД
-                except:
-                    send_some_message(id, "Ошибка запроса, попробуте позже")
-                send_some_message(id, 'Сессия поиска завершена. \n '
+        ## Включаем fields в json запрос
+        elif options['advanced'] is True and msg in advanced_fields.values():
+            for key, value in advanced_fields.items():
+                if advanced_fields[key] == msg:
+                    options[key] = True
+                    send_some_message(id, f'Поле {msg} активировано')
+        elif msg == 'все' and options['advanced'] is True:
+            for field in advanced_fields.keys():
+                options[field] = True
+            send_some_message(id, 'Все поля активированы')
+        ## Ищем только тех, у кого есть минимум одно дополнительное поле
+        elif msg == 'только' and options['advanced'] is True:
+            options['only_advanced'] = True
+            send_some_message(id, 'Поиск ТОЛЬКО с наличием хотя бы одного дополнительного поля включен')
+        ## Начинаем поиск, подключаемся к БД
+        elif msg == "поиск":
+            print(id, f'Возраст: {from_age}-{to_age}, анкет: {profile_count}, доп.поля - {options["advanced"]}')
+            # delete_tables(conn) ## Удалить таблицу, если необходимо
+            create_table(conn)  ## Создаем таблицу user + пара, когда пользователь запустил поиск
+            attachments = [] ## Для фотографий
+            try:
+                 for user in get_users(user_id=id)[:profile_count]:  ## кол-во профилей за сессию
+                    send_some_message(id, f'{"https://vk.com/id" + str(user[0])} {user[1]} {user[2]}, {user[3]}')
+                    if options['advanced'] is True:
+                        replace_dict_keys(user)
+                        for field in user[4:]:
+                            for key, value in field.items():
+                                send_some_message(id, f'{key}: {value} \n')
+                    for photo_id in get_photos(id=user[0]):
+                        attachments.append('photo{}_{}'.format(user[0], photo_id))
+                    send_photo(id)
+                    attachments.clear()
+                    add_user(conn, user_id=id, pair_id=user[0])  ##Добавили пару в БД
+            except:
+                send_some_message(id, "Ошибка запроса, попробуте позже")
+            send_some_message(id, 'Сессия поиска завершена. \n '
                                     'Введите "поиск" повторно (настройки останутся без изменений), '
                                     'либо вы можете изменить количественные параметры (возраст, группы, анкеты). \n'
                                     'Используйте "выход" для завершения работы с ботом (все настройки сбросятся).')
-            ## Выход, сбрасываем настройки
-            elif msg == "выход":
-                print(id, 'вышел из поиска')
-                for key, value in options.items():
-                    options[key] = False
-                send_some_message(id, 'До свидания!')
-            else:
-                send_some_message(id, "Неизвестная команда")
+        ## Выход, сбрасываем настройки
+        elif msg == "выход":
+            print(id, 'вышел из поиска')
+            for key, value in options.items():
+                options[key] = False
+            send_some_message(id, 'До свидания!')
+        else:
+            send_some_message(id, "Неизвестная команда")
